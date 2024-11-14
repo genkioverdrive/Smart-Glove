@@ -23,71 +23,102 @@
 MPU6050 mpu;
 
 /**********ADC ASSIGNMENTS**********/
-// const float VCC = 5;                   // input voltage for the sensor
-// const float R_DIV = 2000.0;            // resistor used to create voltage divider 
-// const float flatResistance = 25000.0;  // resistance value of flex sensor when flat
-// const float bendResistance = 100000.0; // resistance at 90 deg
+const float VCC = 5;                   // input voltage for the sensor
+const float R_DIV = 2000.0;            // resistor used to create voltage divider 
+const float flatResistance = 25000.0;  // resistance value of flex sensor when flat
+const float bendResistance = 100000.0; // resistance at 90 deg
 
 // ADC Calibration variables
-// int sensorMinFore = 1023;
-// int sensorMaxFore = 0;
+int sensorMinFore = 1023;
+int sensorMaxFore = 0;
 
-// int sensorMinMiddle = 1023;
-// int sensorMaxMiddle = 0;
+int sensorMinMiddle = 1023;
+int sensorMaxMiddle = 0;
 
-// int sensorMinRing = 1023;
-// int sensorMaxRing = 0;
+int sensorMinRing = 1023;
+int sensorMaxRing = 0;
 
-// int sensorMinPinkie = 1023;
-// int sensorMaxPinkie = 0;
+int sensorMinPinkie = 1023;
+int sensorMaxPinkie = 0;
 
-// int fore_finger[BUFFER_SIZE] = {0}, middle_finger[BUFFER_SIZE] = {0}, ring_finger[BUFFER_SIZE] = {0}, pinkie_finger[BUFFER_SIZE] = {0};
+volatile int raw_fore_finger[BUFFER_SIZE] = {0}, raw_middle_finger[BUFFER_SIZE] = {0}, raw_ring_finger[BUFFER_SIZE] = {0}, raw_pinkie_finger[BUFFER_SIZE] = {0};
+
+int fore_finger = 0;
+int middle_finger = 0;
+int ring_finger = 0;
+int pinkie_finger = 0;
+
+void averageADC(){
+  int fore_finger_avg = 0;
+  int middle_finger_avg = 0;
+  int ring_finger_avg = 0;
+  int pinkie_finger_avg = 0;
+
+  for(int i = 0 ; i<BUFFER_SIZE ; i++){
+    raw_fore_finger[i] = analogRead(SENSOR_FORE_FINGER);
+    raw_middle_finger[i] = analogRead(SENSOR_MIDDLE_FINGER);
+    raw_ring_finger[i] = analogRead(SENSOR_RING_FINGER);
+    raw_pinkie_finger[i] = analogRead(SENSOR_PINKIE_FINGER);
+
+    fore_finger_avg += fore_finger[i];
+    middle_finger_avg += middle_finger[i];
+    ring_finger_avg += ring_finger[i];
+    pinkie_finger_avg += pinkie_finger[i];
+  }
+
+  fore_finger_avg = fore_finger_avg/BUFFER_SIZE;
+  middle_finger_avg = middle_finger_avg/BUFFER_SIZE;
+  ring_finger_avg = ring_finger_avg/BUFFER_SIZE;
+  pinkie_finger_avg = pinkie_finger_avg/BUFFER_SIZE;
+
+  fore_finger = fore_finger_avg;
+  middle_finger = middle_finger_avg;
+  ring_finger = ring_finger_avg;
+  pinkie_finger = pinkie_finger_avg;
+}
 
 /**********FUNCTION TO CALIBRATE ADC INPUTS FOR FLEX SENSOR**********/
-// void calibrateADC(){
-//   fore_finger = analogRead(SENSOR_FORE_FINGER);
-//   middle_finger = analogRead(SENSOR_MIDDLE_FINGER);
-//   ring_finger = analogRead(SENSOR_RING_FINGER);
-//   pinkie_finger = analogRead(SENSOR_PINKIE_FINGER);
+void calibrateADC(){
+  averageADC();
   
-//   // Maximum values
-//   if(fore_finger>sensorMaxFore){
-//     sensorMaxFore = fore_finger;
-//   }
-//   if(middle_finger>sensorMaxMiddle){
-//     sensorMaxMiddle = middle_finger;
-//   }
-//   if(ring_finger>sensorMaxRing){
-//     sensorMaxRing = ring_finger;
-//   }
-//   if(pinkie_finger>sensorMaxPinkie){
-//     sensorMaxPinkie = pinkie_finger;
-//   }
+  // Maximum values
+  if(fore_finger>sensorMaxFore){
+    sensorMaxFore = fore_finger;
+  }
+  if(middle_finger>sensorMaxMiddle){
+    sensorMaxMiddle = middle_finger;
+  }
+  if(ring_finger>sensorMaxRing){
+    sensorMaxRing = ring_finger;
+  }
+  if(pinkie_finger>sensorMaxPinkie){
+    sensorMaxPinkie = pinkie_finger;
+  }
   
-//   // Minimum values
-//   if(fore_finger<sensorMinFore){
-//     sensorMinFore = fore_finger;
-//   }
-//   if(middle_finger<sensorMinMiddle){
-//     sensorMinMiddle = middle_finger;
-//   }
-//   if(ring_finger<sensorMinRing){
-//     sensorMinRing = ring_finger;
-//   }
-//   if(pinkie_finger<sensorMinPinkie){
-//     sensorMinPinkie = pinkie_finger;
-//   }
-// }
+  // Minimum values
+  if(fore_finger<sensorMinFore){
+    sensorMinFore = fore_finger;
+  }
+  if(middle_finger<sensorMinMiddle){
+    sensorMinMiddle = middle_finger;
+  }
+  if(ring_finger<sensorMinRing){
+    sensorMinRing = ring_finger;
+  }
+  if(pinkie_finger<sensorMinPinkie){
+    sensorMinPinkie = pinkie_finger;
+  }
+}
 
 /**********ACTUAL VALUES USING THE DATASHEET OF THE FLEX SENSOR**********/
-// float angle_flex(int value){
-//   float Vflex = value * (VCC/1023.0);
-//   float Rflex = R_DIV * (VCC / Vflex - 1.0);
-//   Serial.println("Resistance: " + String(Rflex) + " ohms");
-//   float angle = map(Rflex, flatResistance, bendResistance,0,90.0);
+float angle_flex(int value){
+  float Vflex = value * (VCC/1023.0);
+  float Rflex = R_DIV * (VCC / Vflex - 1.0);
+  Serial.println("Resistance: " + String(Rflex) + " ohms");
+  float angle = map(Rflex, flatResistance, bendResistance,0,90.0);
 
-//   return angle;
-// }
+  return angle;
+}
 
 void checkSettings(){ 
   Serial.println();  
@@ -147,53 +178,31 @@ void setup() {
     Serial.println("Could not find a valid MPU6050 sensor, check wiring!");
     delay(500);
   }
+
   checkSettings();
 }
 
 void checkMovement(Vector newMovement){
+  // Motion Sensor implemented, flex sensors to be implemented
   static Vector lastMovement;
 
+  // Currently based on motion sensor values alone, flex sensors needed for finger tracking
   if(newMovement.ZAxis > 9){
     Serial.println("Bye!");
   }else if(abs(newMovement.XAxis) > 7){
     Serial.println("Stop!");
-  }
-  else if((abs(lastMovement.ZAxis - newMovement.ZAxis) < 2) && (abs(newMovement.XAxis-newMovement.YAxis) > 10)){
+  }else if((abs(lastMovement.ZAxis - newMovement.ZAxis) < 2) && (abs(newMovement.XAxis-newMovement.YAxis) > 10)){
     Serial.println("Hello!");
   }
 }
 
 void loop(){
-  // int fore_finger_avg = 0;
-  // int middle_finger_avg = 0;
-  // int ring_finger_avg = 0;
-  // int pinkie_finger_avg = 0;
-
-  // for(int i = 0 ; i<BUFFER_SIZE ; i++){
-  //   fore_finger[i] = analogRead(SENSOR_FORE_FINGER);
-  //   middle_finger[i] = analogRead(SENSOR_MIDDLE_FINGER);
-  //   ring_finger[i] = analogRead(SENSOR_RING_FINGER);
-  //   pinkie_finger[i] = analogRead(SENSOR_PINKIE_FINGER);
-
-  //   fore_finger_avg += fore_finger[i];
-  //   middle_finger_avg += middle_finger[i];
-  //   ring_finger_avg += ring_finger[i];
-  //   pinkie_finger_avg += pinkie_finger[i];
-  // }
-  
-  // fore_finger_avg = fore_finger_avg/BUFFER_SIZE;
-  // middle_finger_avg = middle_finger_avg/BUFFER_SIZE;
-  // ring_finger_avg = ring_finger_avg/BUFFER_SIZE;
-  // pinkie_finger_avg = pinkie_finger_avg/BUFFER_SIZE;
+  // averageADC();
 
   // fore_finger = map(fore_finger, sensorMinFore, sensorMaxFore, 1, 255);
   // middle_finger = map(middle_finger, sensorMinMiddle, sensorMaxMiddle, 1, 255);
   // ring_finger = map(ring_finger, sensorMinRing, sensorMaxRing, 1, 255);
   // pinkie_finger = map(pinkie_finger, sensorMinPinkie, sensorMaxPinkie, 1, 255);
-
-  // char printstr[100];
-  // snprintf(printstr,sizeof(printstr),"ForeFinger:%d Middle finger:%d Ring finger:%d Pinkie finger:%d",fore_finger_avg,middle_finger_avg,ring_finger_avg,pinkie_finger_avg);
-  // Serial.println(printstr);
 
   // delay(10);
   
@@ -201,23 +210,13 @@ void loop(){
   // float mf = angle_flex(middle_finger);
   // float rf = angle_flex(ring_finger);
   // float pf = angle_flex(pinkie_finger);
-
-  // char printstr[100];
-  // snprintf(printstr,sizeof(printstr),"ForeFinger:%f Middle finger:%f Ring finger:%f Pinkie finger:%f",ff,mf,rf,pf);
-  // Serial.println(printstr);
   
   // MPU 6050 values
   Vector rawAccel = mpu.readRawAccel();
   Vector normAccel = mpu.readNormalizeAccel();
-  // Serial.print(" Xnorm = " + (String)(normAccel.XAxis));
-  // Serial.print(" Ynorm = "+(String)(normAccel.YAxis));
-  // Serial.println(" Znorm = "+(String)(normAccel.ZAxis));
 
+  // Function to Check movement and print output based on movement
   checkMovement(normAccel);
-
-  // Send bluetooth data
-  // char bluetoothData[100];
-  // snprintf(bluetoothData,sizeof(bluetoothData),"",command);
 
   delay(500);
 }
