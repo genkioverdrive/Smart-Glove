@@ -24,9 +24,9 @@ MPU6050 mpu;
 
 /**********ADC ASSIGNMENTS**********/
 const float VCC = 5;                   // input voltage for the sensor
-const float R_DIV = 2000.0;            // resistor used to create voltage divider 
-const float flatResistance = 25000.0;  // resistance value of flex sensor when flat
-const float bendResistance = 100000.0; // resistance at 90 deg
+const float R_DIV = 10000.0;            // resistor used to create voltage divider 10K ohm
+const float flatResistance = 25000.0;  // resistance value of flex sensor when flat 25k ohm
+const float bendResistance = 100000.0; // resistance at 90 deg 100k ohm
 
 // ADC Calibration variables
 int sensorMinFore = 1023;
